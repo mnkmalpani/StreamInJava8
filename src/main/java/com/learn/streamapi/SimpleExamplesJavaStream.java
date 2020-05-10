@@ -1,6 +1,8 @@
 package com.learn.streamapi;
 
 import java.lang.reflect.Array;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -40,6 +42,24 @@ public class SimpleExamplesJavaStream {
         people.stream()
                 .map(String::toLowerCase)
                 .filter(x -> x.startsWith("m"))
+                .forEach(System.out::println);
+
+
+        // Changing exsiting variable data and use more like a function in lambdas
+        String[] formats = {"20320", "050320", "70320", "150320"};
+        Stream.of(formats)
+                .map(x -> {
+                    if(x.length()==5)
+                        x = '0'+x;
+                    return x;
+                })
+                .map( s -> {
+                    DateTimeFormatter format = DateTimeFormatter.ofPattern("ddMMyy");
+                    LocalDate localDate = LocalDate.parse(s, format);
+                    DateTimeFormatter newFormat = DateTimeFormatter.ofPattern("YYYYMMdd");
+                    return newFormat.format(localDate);
+                        }
+                )
                 .forEach(System.out::println);
 
     }
