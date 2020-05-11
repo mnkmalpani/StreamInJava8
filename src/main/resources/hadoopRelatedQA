@@ -1,0 +1,18 @@
+1. how-does-hadoop-handle-large-files:
+    Huge files in HDFS are already stored in a distributed fashion. When you run a mapreduce job, you have to specify an InputFormat for your file. If the InputFormat is splittable (i.e, it's uncompressed, or compressed in bz2 format) then it can be divided among as many mappers as you want. Most reasonable implementations ensure that all records in the file go to some mapper and no mapper gets the same record twice.
+
+    Copies of the file are not transferred - the mappers just read the segment of the file that they are assigned. These are either streamed over the network, or assigned to the machine that the piece of the file is stored on, if possible. You can read as many input files as you want with Hadoop, as long as you specify the input format for each one.4
+
+    Link: https://stackoverflow.com/questions/15490958/how-does-hadoop-handle-large-files
+
+2. How spark read a large file (petabyte) when file can not be fit in spark's main memory
+
+    First of all, Spark only starts reading in the data when an action (like count, collect or write) is called. Once an action is called, Spark loads in data in partitions - the number of concurrently loaded partitions depend on the number of cores you have available. So in Spark you can think of 1 partition = 1 core = 1 task. Note that all concurrently loaded partitions have to fit into memory, or you will get an OOM.
+
+    Assuming that you have several stages, Spark then runs the transformations from the first stage on the loaded partitions only. Once it has applied the transformations on the data in the loaded partitions, it stores the output as shuffle-data and then reads in more partitions. It then applies the transformations on these partitions, stores the output as shuffle-data, reads in more partitions and so forth until all data has been read.
+
+    If you apply no transformation but only do for instance a count, Spark will still read in the data in partitions, but it will not store any data in your cluster and if you do the count again it will read in all the data once again. To avoid reading in data several times, you might call cache or persist in which case Spark will try to store the data in you cluster. On cache (which is the same as persist(StorageLevel.MEMORY_ONLY) it will store all partitions in memory - if it doesn't fit in memory you will get an OOM. If you call persist(StorageLevel.MEMORY_AND_DISK) it will store as much as it can in memory and the rest will be put on disk. If data doesn't fit on disk either the OS will usually kill your workers.
+
+    Note that Spark has its own little memory management system. Some of the memory that you assign to your Spark job is used to hold the data being worked on and some of the memory is used for storage if you call cache or persist.
+
+   https://stackoverflow.com/questions/46638901/how-spark-read-a-large-file-petabyte-when-file-can-not-be-fit-in-sparks-main
